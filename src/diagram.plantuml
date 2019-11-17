@@ -1,0 +1,14 @@
+@startuml
+
+class BlockProcessor
+class BlockProcessor2
+class DiagramBlock
+class DitaaBlock
+class PlantUmlBlock
+
+BlockProcessor <|-- DiagramBlock
+BlockProcessor2 <|-- DiagramBlock
+DiagramBlock <|-- DitaaBlock
+DiagramBlock <|-- PlantUmlBlock
+
+@enduml

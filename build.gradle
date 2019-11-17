@@ -1,0 +1,81 @@
+buildscript {
+    repositories {
+
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath group: 'org.asciidoctor', name: 'asciidoctorj', version: '2.1.0'
+        classpath group: 'org.asciidoctor', name: 'asciidoctorj-diagram', version: '1.5.18'
+        classpath group: 'org.asciidoctor', name: 'asciidoctorj-pdf', version: '1.5.0-beta.7'
+        classpath "org.openapitools:openapi-generator-gradle-plugin:4.2.1"
+    }
+}
+
+apply plugin: "base"
+apply plugin: 'org.openapi.generator'
+
+
+openApiGenerate {
+    generatorName = "asciidoc"
+    inputSpec = "$rootDir/specs/petstore-v3.0.yaml".toString()
+    outputDir = "$buildDir/generated".toString()
+
+}
+file("$buildDir/generated").mkdirs()
+
+
+import org.asciidoctor.Asciidoctor
+import org.asciidoctor.SafeMode
+import org.asciidoctor.jruby.AsciiDocDirectoryWalker
+
+import static org.asciidoctor.OptionsBuilder.options
+import static org.asciidoctor.Asciidoctor.Factory.create
+
+ext {
+    docSrcDir = file("src")
+    docOutputDir = file("$buildDir/doc")
+}
+
+class AsciidoctorTask extends DefaultTask {
+
+    @InputDirectory
+    def File srcDir
+    @OutputDirectory
+    def File outputDir;
+
+    @Input
+    def backend = "pdf"
+
+    @TaskAction
+    def generate() {
+
+        Asciidoctor asciidoctor = create()
+        asciidoctor.requireLibrary("asciidoctor-diagram");
+        asciidoctor.convertDirectory(
+                new AsciiDocDirectoryWalker(srcDir.path),
+                options()
+                        .safe(SafeMode.UNSAFE)
+                        .mkDirs(true)
+                        .backend(backend)
+                        .baseDir(srcDir)
+                        .toDir(outputDir));
+    }
+}
+
+task pdf(type: AsciidoctorTask) {
+
+    srcDir = docSrcDir
+    outputDir = docOutputDir
+}
+
+task apiSpec(type: AsciidoctorTask) {
+
+    dependsOn tasks.openApiGenerate
+    srcDir = file(tasks.openApiGenerate.outputDir)
+    outputDir = file("$buildDir/specpdf")
+}
+
+
+
+wrapper.gradleVersion = "6.0"
